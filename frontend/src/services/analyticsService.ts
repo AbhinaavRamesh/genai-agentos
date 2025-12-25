@@ -179,11 +179,16 @@ export const analyticsService = {
     if (params.start_date) queryParams.start_date = params.start_date;
     if (params.end_date) queryParams.end_date = params.end_date;
 
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('Authentication token is missing. Please log in again.');
+    }
+
     const response = await fetch(
       `/api/analytics/export?${new URLSearchParams(queryParams).toString()}`,
       {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
         },
       },
     );
