@@ -604,7 +604,7 @@ class BudgetAlertRepository(CRUDBase[BudgetAlert, BudgetAlertCreate, BudgetAlert
             select(self.model).where(
                 and_(
                     self.model.user_id == user_id,
-                    self.model.is_active == True,
+                    self.model.is_active.is_(True),
                 )
             )
         )
