@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { FC } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp,
   TrendingDown,
@@ -313,6 +314,7 @@ const RecentExecutionsTable: FC<RecentExecutionsTableProps> = ({
 };
 
 const AnalyticsPage: FC = () => {
+  const navigate = useNavigate();
   const [period, setPeriod] = useState<Period>('24h');
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [executions, setExecutions] = useState<PaginatedExecutions | null>(null);
@@ -360,7 +362,7 @@ const AnalyticsPage: FC = () => {
 
   const handleViewDetails = (executionId: string) => {
     // Navigate to execution details
-    window.location.href = `/analytics/executions/${executionId}`;
+    navigate(`/analytics/executions/${executionId}`);
   };
 
   const formatNumber = (num: number): string => {
