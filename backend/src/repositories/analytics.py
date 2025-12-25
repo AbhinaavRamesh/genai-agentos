@@ -342,7 +342,7 @@ class AgentExecutionRepository(CRUDBase[AgentExecution, AgentExecutionCreate, Ag
             total_output_tokens=metrics.output_tokens or 0,
             total_tokens=metrics.total_tokens or 0,
             total_cost_usd=total_cost,
-            estimated_monthly_cost_usd=total_cost * 30 if period_length.days == 1 else total_cost * 30 / max(period_length.days, 1),
+            estimated_monthly_cost_usd=total_cost * 30 / max(period_length.days, 1),
             executions_change_percent=calc_change(float(total_executions), float(prev_total)),
             execution_time_change_percent=calc_change(float(metrics.avg_time or 0), prev_avg_time),
             success_rate_change_percent=calc_change(success_rate, prev_success_rate),
