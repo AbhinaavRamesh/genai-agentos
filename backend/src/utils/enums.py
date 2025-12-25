@@ -34,3 +34,33 @@ class AgentIdType(Enum):
     agent_id = "agent_id"
     mcp_tool_id = "mcp_tool_id"
     a2a_card_id = "a2a_card_id"
+
+
+class ExecutionStatus(Enum):
+    pending = "pending"
+    running = "running"
+    success = "success"
+    failure = "failure"
+    timeout = "timeout"
+    cancelled = "cancelled"
+
+
+class ExecutionTraceStepType(Enum):
+    thought = "thought"
+    action = "action"
+    observation = "observation"
+    agent_invoke = "agent_invoke"
+    tool_call = "tool_call"
+    final_answer = "final_answer"
+
+
+class BudgetAlertType(Enum):
+    warning = "warning"
+    hard_stop = "hard_stop"
+
+
+class BudgetScope(Enum):
+    user = "user"
+    agent = "agent"
+    flow = "flow"
+    global_ = "global"
