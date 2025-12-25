@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from src.routes.a2a.routes import a2a_router
 from src.routes.agents.routes import agent_router
+from src.routes.analytics.routes import analytics_router
 from src.routes.chat.routes import chat_router
 from src.routes.flows.routes import flow_router
 from src.routes.llms.routes import llm_router
@@ -19,3 +20,4 @@ api_router.include_router(llm_router)
 api_router.include_router(chat_router)
 api_router.include_router(mcp_router)
 api_router.include_router(a2a_router)
+api_router.include_router(analytics_router)

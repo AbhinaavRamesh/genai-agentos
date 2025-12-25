@@ -14,6 +14,8 @@ const AgentsPage = lazy(() => import('./pages/AgentsPage'));
 const AgentFlowsPage = lazy(() => import('./pages/AgentFlowsPage'));
 const AgentFlowsEditPage = lazy(() => import('./pages/AgentFlowsEditPage'));
 const AgentsTracePage = lazy(() => import('./pages/AgentsTracePage'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const ExecutionDetailsPage = lazy(() => import('./pages/ExecutionDetailsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Loading component
@@ -141,6 +143,26 @@ export const router = createBrowserRouter(
         <ProtectedRoute>
           <Suspense fallback={<LoadingFallback />}>
             <MCPAgentsPage />
+          </Suspense>
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: '/analytics',
+      element: (
+        <ProtectedRoute>
+          <Suspense fallback={<LoadingFallback />}>
+            <AnalyticsPage />
+          </Suspense>
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: '/analytics/executions/:id',
+      element: (
+        <ProtectedRoute>
+          <Suspense fallback={<LoadingFallback />}>
+            <ExecutionDetailsPage />
           </Suspense>
         </ProtectedRoute>
       ),

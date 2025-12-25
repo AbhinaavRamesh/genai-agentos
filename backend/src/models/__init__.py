@@ -1,9 +1,11 @@
 import uuid
+from datetime import datetime
 from typing import List
 
-from sqlalchemy import ForeignKey, UniqueConstraint
+from sqlalchemy import ForeignKey, Numeric, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import Optional
 
 from src.db.annotations import (
     created_at,
@@ -15,8 +17,16 @@ from src.db.annotations import (
     updated_at,
     uuid_pk,
 )
+from decimal import Decimal
+
 from src.db.base import Base
-from src.utils.enums import SenderType
+from src.utils.enums import (
+    BudgetAlertType,
+    BudgetScope,
+    ExecutionStatus,
+    ExecutionTraceStepType,
+    SenderType,
+)
 
 
 class UserProjectAssociation(Base):
@@ -414,3 +424,235 @@ class UserProfile(Base):
     user: Mapped["User"] = relationship(back_populates="profile", single_parent=True)
 
     # TODO: config fields, other credentials, etc
+
+
+# ============================================================================
+# Analytics Models
+# ============================================================================
+
+
+class AgentExecution(Base):
+    """Tracks individual agent execution instances for analytics."""
+
+    __tablename__ = "agentexecutions"
+
+    id: Mapped[uuid_pk]
+    request_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), index=True, nullable=False
+    )
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), index=True, nullable=False
+    )
+
+    # The agent that was executed (can be genai agent, mcp tool, or a2a card)
+    agent_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), index=True, nullable=True
+    )
+    agent_type: Mapped[str] = mapped_column(nullable=True)  # genai, mcp, a2a, flow
+    agent_name: Mapped[str] = mapped_column(nullable=True)
+
+    # User who triggered the execution
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+
+    # Model configuration used
+    model_config_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("modelconfigs.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    model_name: Mapped[str] = mapped_column(nullable=True)
+
+    # Timing
+    started_at: Mapped[created_at]
+    completed_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+
+    # Status
+    status: Mapped[ExecutionStatus] = mapped_column(default=ExecutionStatus.pending)
+    error_message: Mapped[str] = mapped_column(nullable=True)
+    error_type: Mapped[str] = mapped_column(nullable=True)
+
+    # Token usage
+    input_tokens: Mapped[int] = mapped_column(default=0)
+    output_tokens: Mapped[int] = mapped_column(default=0)
+    total_tokens: Mapped[int] = mapped_column(default=0)
+
+    # Execution metrics
+    execution_time_ms: Mapped[int] = mapped_column(default=0)
+    llm_time_ms: Mapped[int] = mapped_column(default=0, nullable=True)
+
+    # Cost (stored in USD)
+    cost_usd: Mapped[Decimal] = mapped_column(
+        Numeric(precision=10, scale=6), default=Decimal("0.000000")
+    )
+
+    # Parent execution for nested agent calls
+    parent_execution_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("agentexecutions.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+
+    # Query/input summary (truncated for privacy)
+    query_preview: Mapped[str] = mapped_column(nullable=True)
+
+    # Relationships
+    traces: Mapped[List["ExecutionTrace"]] = relationship(
+        back_populates="execution", cascade="all, delete-orphan"
+    )
+    token_usages: Mapped[List["TokenUsage"]] = relationship(
+        back_populates="execution", cascade="all, delete-orphan"
+    )
+
+    created_at: Mapped[created_at]
+    updated_at: Mapped[updated_at]
+
+    def __repr__(self) -> str:
+        return f"<AgentExecution(id={self.id}, agent={self.agent_name}, status={self.status})>"
+
+
+class TokenUsage(Base):
+    """Detailed token usage tracking per component within an execution."""
+
+    __tablename__ = "tokenusages"
+
+    id: Mapped[uuid_pk]
+    execution_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("agentexecutions.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    execution: Mapped["AgentExecution"] = relationship(back_populates="token_usages")
+
+    # Which component used the tokens
+    component: Mapped[str] = mapped_column(nullable=False)  # master_agent, agent_{name}, mcp_tool, etc.
+    step_number: Mapped[int] = mapped_column(nullable=True)
+
+    # Token counts
+    input_tokens: Mapped[int] = mapped_column(default=0)
+    output_tokens: Mapped[int] = mapped_column(default=0)
+
+    # Model used
+    model: Mapped[str] = mapped_column(nullable=True)
+
+    # Cost
+    cost_usd: Mapped[Decimal] = mapped_column(
+        Numeric(precision=10, scale=6), default=Decimal("0.000000")
+    )
+
+    created_at: Mapped[created_at]
+
+
+class ExecutionTrace(Base):
+    """Step-by-step trace of execution for debugging and visualization."""
+
+    __tablename__ = "executiontraces"
+
+    id: Mapped[uuid_pk]
+    execution_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("agentexecutions.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    execution: Mapped["AgentExecution"] = relationship(back_populates="traces")
+
+    step_number: Mapped[int] = mapped_column(nullable=False)
+    step_type: Mapped[ExecutionTraceStepType]
+
+    # Content of the step (thought, action, observation, etc.)
+    content: Mapped[str] = mapped_column(nullable=True)
+
+    # For agent invocations
+    invoked_agent_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
+    invoked_agent_name: Mapped[str] = mapped_column(nullable=True)
+
+    # Timing
+    timestamp: Mapped[created_at]
+    duration_ms: Mapped[int] = mapped_column(default=0)
+
+    # Token usage for this step
+    input_tokens: Mapped[int] = mapped_column(default=0, nullable=True)
+    output_tokens: Mapped[int] = mapped_column(default=0, nullable=True)
+
+
+class BudgetAlert(Base):
+    """Budget alerts and spending limits."""
+
+    __tablename__ = "budgetalerts"
+
+    id: Mapped[uuid_pk]
+
+    # Who owns this budget
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    # What the budget applies to
+    scope: Mapped[BudgetScope] = mapped_column(default=BudgetScope.user)
+    scope_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )  # agent_id, flow_id, etc.
+
+    # Budget configuration
+    threshold_usd: Mapped[Decimal] = mapped_column(
+        Numeric(precision=10, scale=2), nullable=False
+    )
+    period_days: Mapped[int] = mapped_column(default=30)  # Rolling window
+
+    # Alert settings
+    alert_type: Mapped[BudgetAlertType] = mapped_column(default=BudgetAlertType.warning)
+    alert_at_percentage: Mapped[int] = mapped_column(default=80)  # Alert at 80% of budget
+    webhook_url: Mapped[str] = mapped_column(nullable=True)
+    email_notification: Mapped[bool] = mapped_column(default=True)
+
+    # Status
+    is_active: Mapped[bool] = mapped_column(default=True)
+    last_alert_sent_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    current_spend_usd: Mapped[Decimal] = mapped_column(
+        Numeric(precision=10, scale=2), default=Decimal("0.00")
+    )
+
+    created_at: Mapped[created_at]
+    updated_at: Mapped[updated_at]
+
+
+class AnalyticsSnapshot(Base):
+    """Pre-aggregated analytics data for fast dashboard queries."""
+
+    __tablename__ = "analyticssnapshots"
+
+    id: Mapped[uuid_pk]
+
+    # Snapshot period
+    snapshot_date: Mapped[datetime] = mapped_column(index=True, nullable=False)
+    period_type: Mapped[str] = mapped_column(nullable=False)  # hourly, daily, weekly, monthly
+
+    # Scope
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    agent_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
+    agent_name: Mapped[str] = mapped_column(nullable=True)
+    model_name: Mapped[str] = mapped_column(nullable=True)
+
+    # Execution metrics
+    total_executions: Mapped[int] = mapped_column(default=0)
+    successful_executions: Mapped[int] = mapped_column(default=0)
+    failed_executions: Mapped[int] = mapped_column(default=0)
+    timeout_executions: Mapped[int] = mapped_column(default=0)
+
+    # Timing metrics (in ms)
+    avg_execution_time_ms: Mapped[int] = mapped_column(default=0)
+    p50_execution_time_ms: Mapped[int] = mapped_column(default=0)
+    p95_execution_time_ms: Mapped[int] = mapped_column(default=0)
+    p99_execution_time_ms: Mapped[int] = mapped_column(default=0)
+
+    # Token metrics
+    total_input_tokens: Mapped[int] = mapped_column(default=0)
+    total_output_tokens: Mapped[int] = mapped_column(default=0)
+    total_tokens: Mapped[int] = mapped_column(default=0)
+
+    # Cost metrics
+    total_cost_usd: Mapped[Decimal] = mapped_column(
+        Numeric(precision=10, scale=2), default=Decimal("0.00")
+    )
+
+    created_at: Mapped[created_at]
+

@@ -10,6 +10,7 @@ import A2AAgentsIcon from '@/assets/icons/a2a.svg';
 import MCPAgentsIcon from '@/assets/icons/mcp.svg';
 import FlowsIcon from '@/assets/icons/tree.svg';
 import NewFlowIcon from '@/assets/icons/new-flow.svg';
+import AnalyticsIcon from '@/assets/icons/analytics.svg';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -37,6 +38,11 @@ const pages: PageLink[] = [
     path: '/agent-flows/new',
     title: 'New Agent Flow',
     Icon: NewFlowIcon,
+  },
+  {
+    path: '/analytics',
+    title: 'Analytics',
+    Icon: AnalyticsIcon,
   },
 ];
 
