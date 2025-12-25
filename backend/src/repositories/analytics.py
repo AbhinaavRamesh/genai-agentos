@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List, Optional, Tuple
-from uuid import UUID
 
 from sqlalchemy import and_, case, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
