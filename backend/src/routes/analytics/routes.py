@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query
