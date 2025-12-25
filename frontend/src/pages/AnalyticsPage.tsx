@@ -15,7 +15,7 @@ import {
 
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { analyticsService, AnalyticsQueryParams } from '@/services/analyticsService';
 import {
   AnalyticsOverview,
