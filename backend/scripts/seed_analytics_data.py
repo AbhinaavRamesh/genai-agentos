@@ -9,7 +9,6 @@ import asyncio
 import random
 import uuid
 from datetime import datetime, timedelta
-from decimal import Decimal
 import os
 
 from sqlalchemy import text
