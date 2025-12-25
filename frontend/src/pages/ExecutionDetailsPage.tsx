@@ -163,7 +163,7 @@ const TokenUsageTable: FC<TokenUsageTableProps> = ({ tokenUsages }) => {
               <tr key={usage.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {usage.component}
-                  {usage.step_number !== null && (
+                  {usage.step_number != null && (
                     <span className="text-gray-400 ml-1">(step {usage.step_number})</span>
                   )}
                 </td>
