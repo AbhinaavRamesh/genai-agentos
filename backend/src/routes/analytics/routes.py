@@ -27,7 +27,6 @@ from src.schemas.api.analytics.dto import (
     TokenUsageDTO,
 )
 from src.schemas.api.analytics.schemas import (
-    AnalyticsQueryParams,
     BudgetAlertCreate,
     BudgetAlertUpdate,
 )
