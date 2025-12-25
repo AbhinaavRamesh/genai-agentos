@@ -10,13 +10,14 @@ import random
 import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal
+import os
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 # Configuration - use localhost for running outside Docker
-DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres")
 
 # Sample data
 AGENT_NAMES = [
