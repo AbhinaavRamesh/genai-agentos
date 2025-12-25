@@ -656,6 +656,3 @@ class AnalyticsSnapshot(Base):
 
     created_at: Mapped[created_at]
 
-
-# Import datetime at the module level for type hints
-from datetime import datetime  # noqa: E402
